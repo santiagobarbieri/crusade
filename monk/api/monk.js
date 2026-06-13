@@ -11,8 +11,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'messages array required' });
   }
 
-  const GEMINI_KEY = process.env.GEMINI_API_KEY;
-  if (!GEMINI_KEY) return res.status(500).json({ error: 'API key not configured' });
+  const API_KEY = process.env.OPENROUTER_API_KEY;
+  if (!API_KEY) return res.status(500).json({ error: 'API key not configured' });
 
   const SYSTEM = `Sos MONK, un asistente cultural y creativo integrado dentro de CRUSADE®, un workspace personal de producción creativa.
 
@@ -33,35 +33,33 @@ Si no entendés bien qué busca, hacés una sola pregunta — no varias.
 
 Recordá siempre: sos un ayudante. El creativo dirige. Vos encontrás, sugerís, conectás.`;
 
-  const contents = [
-    { role: 'user', parts: [{ text: SYSTEM }] },
-    { role: 'model', parts: [{ text: 'Entendido.' }] },
-    ...messages.map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }]
-    }))
-  ];
-
   try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          generationConfig: { temperature: 0.85, maxOutputTokens: 800 }
-        })
-      }
-    );
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://crusade.vercel.app',
+        'X-Title': 'MONK — CRUSADE®'
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.0-flash-exp:free',
+        messages: [
+          { role: 'system', content: SYSTEM },
+          ...messages
+        ],
+        temperature: 0.85,
+        max_tokens: 800
+      })
+    });
 
-    const data = await geminiRes.json();
+    const data = await response.json();
 
-    if (!geminiRes.ok) {
-      return res.status(geminiRes.status).json({ error: data.error?.message || 'Gemini error' });
+    if (!response.ok) {
+      return res.status(response.status).json({ error: data.error?.message || 'OpenRouter error' });
     }
 
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text = data.choices?.[0]?.message?.content || '';
     return res.status(200).json({ text });
 
   } catch (err) {
