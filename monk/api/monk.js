@@ -7,7 +7,6 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { messages } = req.body;
-
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'messages array required' });
   }
@@ -36,7 +35,7 @@ Recordá siempre: sos un ayudante. El creativo dirige. Vos encontrás, sugerís,
 
   const contents = [
     { role: 'user', parts: [{ text: SYSTEM }] },
-    { role: 'model', parts: [{ text: 'Entendido. Estoy acá como MONK, listo para acompañar.' }] },
+    { role: 'model', parts: [{ text: 'Entendido.' }] },
     ...messages.map(m => ({
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: m.content }]
@@ -45,16 +44,13 @@ Recordá siempre: sos un ayudante. El creativo dirige. Vos encontrás, sugerís,
 
   try {
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents,
-          generationConfig: {
-            temperature: 0.85,
-            maxOutputTokens: 800
-          }
+          generationConfig: { temperature: 0.85, maxOutputTokens: 800 }
         })
       }
     );
