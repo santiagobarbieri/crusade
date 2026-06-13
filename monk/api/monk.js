@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'messages array required' });
   }
 
-  const API_KEY = process.env.OPENROUTER_API_KEY;
+  const API_KEY = process.env.GROQ_API_KEY;
   if (!API_KEY) return res.status(500).json({ error: 'API key not configured' });
 
   const SYSTEM = `Sos MONK, un asistente cultural y creativo integrado dentro de CRUSADE, un workspace personal de produccion creativa.
@@ -34,16 +34,14 @@ Si no entendes bien que busca, haces una sola pregunta, no varias.
 Recordá siempre: sos un ayudante. El creativo dirige. Vos encontras, sugeris, conectas.`;
 
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://crusade.vercel.app',
-        'X-Title': 'MONK CRUSADE'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-chat:free',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: SYSTEM },
           ...messages
@@ -56,7 +54,7 @@ Recordá siempre: sos un ayudante. El creativo dirige. Vos encontras, sugeris, c
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: data.error?.message || 'OpenRouter error' });
+      return res.status(response.status).json({ error: data.error?.message || 'Groq error' });
     }
 
     const text = data.choices?.[0]?.message?.content || '';
