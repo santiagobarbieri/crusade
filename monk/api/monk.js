@@ -34,19 +34,22 @@ Si no entendés bien qué busca, hacés una sola pregunta — no varias.
 
 Recordá siempre: sos un ayudante. El creativo dirige. Vos encontrás, sugerís, conectás.`;
 
-  const contents = messages.map(m => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }]
-  }));
+  const contents = [
+    { role: 'user', parts: [{ text: SYSTEM }] },
+    { role: 'model', parts: [{ text: 'Entendido. Estoy acá como MONK, listo para acompañar.' }] },
+    ...messages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }))
+  ];
 
   try {
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM }] },
           contents,
           generationConfig: {
             temperature: 0.85,
