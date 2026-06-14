@@ -1,3 +1,6 @@
+import { redisCmd } from './_redis.js';
+import { buildClusterContext } from './cluster-context.js';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -6,7 +9,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { messages } = req.body;
+  const { messages, clusterId } = req.body;
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'messages array required' });
   }
@@ -33,6 +36,21 @@ Si no entendes bien que busca, haces una sola pregunta, no varias.
 
 Recordá siempre: sos un ayudante. El creativo dirige. Vos encontras, sugeris, conectas.`;
 
+  let clusterContext = '';
+  if (clusterId) {
+    try {
+      const r = await redisCmd('GET', `cluster:${clusterId}`);
+      if (r.result) {
+        const cluster = JSON.parse(r.result);
+        clusterContext = '\n\n' + buildClusterContext(cluster);
+      }
+    } catch (e) {
+      // si falla la lectura del cluster, seguimos sin ese contexto
+    }
+  }
+
+  const FULL_SYSTEM = SYSTEM + clusterContext;
+
   try {
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -43,7 +61,7 @@ Recordá siempre: sos un ayudante. El creativo dirige. Vos encontras, sugeris, c
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: [
-          { role: 'system', content: SYSTEM },
+          { role: 'system', content: FULL_SYSTEM },
           ...messages
         ],
         temperature: 0.85,

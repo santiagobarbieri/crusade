@@ -248,6 +248,162 @@
       font-size: 12px;
       margin-top: 8px;
     }
+
+    /* cluster bar */
+    #cluster-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 32px;
+      border-bottom: 0.5px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    #cluster-select, .bar-btn, .form-input, .form-select {
+      background: transparent;
+      border: 0.5px solid rgba(240,237,230,0.12);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 12px;
+      border-radius: 6px;
+      padding: 6px 10px;
+      outline: none;
+    }
+
+    #cluster-select {
+      flex: 1;
+      max-width: 260px;
+    }
+
+    #cluster-select option { background: var(--surface); color: var(--text-primary); }
+
+    .bar-btn {
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .bar-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent-dim);
+    }
+
+    /* cluster panel */
+    #cluster-panel {
+      border-bottom: 0.5px solid var(--border);
+      padding: 18px 32px 22px;
+      flex-shrink: 0;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    #cluster-panel.hidden { display: none; }
+
+    #cluster-meta {
+      margin-bottom: 14px;
+    }
+
+    #cluster-meta .meta-title {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 16px;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    #cluster-meta .meta-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    #cluster-meta .meta-tags {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    #items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .item-card {
+      border: 0.5px solid rgba(240,237,230,0.08);
+      border-radius: 8px;
+      padding: 10px;
+      position: relative;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .item-type {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-dim);
+      margin-bottom: 4px;
+    }
+
+    .item-title {
+      color: var(--text-primary);
+      font-weight: 500;
+      margin-bottom: 2px;
+      word-break: break-word;
+    }
+
+    .item-sub {
+      color: var(--text-dim);
+      word-break: break-word;
+    }
+
+    .item-swatches {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    .item-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      border: 0.5px solid rgba(255,255,255,0.1);
+    }
+
+    .item-remove {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .item-remove:hover { color: rgba(230,100,100,0.7); }
+
+    .empty-note {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-style: italic;
+      margin-bottom: 16px;
+    }
+
+    /* add item form */
+    #add-item-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .form-input { flex: 1; min-width: 110px; }
+    .form-select { flex: 0 0 auto; }
+
+    .form-input::placeholder { color: rgba(240,237,230,0.18); font-style: italic; }
+    .form-input:focus, .form-select:focus { border-color: var(--accent-dim); }
   </style>
 </head>
 <body>
@@ -260,6 +416,34 @@
         <span id="status-text">presente</span>
       </span>
     </header>
+
+    <div id="cluster-bar">
+      <select id="cluster-select">
+        <option value="">— sin cluster activo —</option>
+      </select>
+      <button class="bar-btn" id="new-cluster-btn">+ cluster</button>
+      <button class="bar-btn" id="toggle-panel-btn">materiales</button>
+    </div>
+
+    <div id="cluster-panel" class="hidden">
+      <div id="cluster-meta"></div>
+      <div id="items-grid"></div>
+
+      <form id="add-item-form">
+        <select class="form-select" id="item-type">
+          <option value="text">nota</option>
+          <option value="image">imagen</option>
+          <option value="link">link</option>
+          <option value="audio">audio</option>
+          <option value="typography">tipografía</option>
+          <option value="palette">paleta</option>
+        </select>
+        <input class="form-input" id="item-title" type="text" placeholder="título" />
+        <input class="form-input" id="item-extra" type="text" placeholder="url" />
+        <input class="form-input" id="item-note" type="text" placeholder="nota (opcional)" />
+        <button type="submit" class="bar-btn">agregar</button>
+      </form>
+    </div>
 
     <div id="messages">
       <div class="msg monk">
@@ -296,6 +480,267 @@
     const dotEl = document.getElementById('dot');
     const statusEl = document.getElementById('status-text');
     const errorEl = document.getElementById('error');
+
+    // cluster ui
+    const clusterSelect = document.getElementById('cluster-select');
+    const newClusterBtn = document.getElementById('new-cluster-btn');
+    const togglePanelBtn = document.getElementById('toggle-panel-btn');
+    const clusterPanel = document.getElementById('cluster-panel');
+    const clusterMeta = document.getElementById('cluster-meta');
+    const itemsGrid = document.getElementById('items-grid');
+    const addItemForm = document.getElementById('add-item-form');
+    const itemTypeEl = document.getElementById('item-type');
+    const itemTitleEl = document.getElementById('item-title');
+    const itemExtraEl = document.getElementById('item-extra');
+    const itemNoteEl = document.getElementById('item-note');
+
+    const EXTRA_PLACEHOLDERS = {
+      text: '',
+      image: 'url de la imagen',
+      link: 'url',
+      audio: 'url (spotify, etc)',
+      typography: 'foundry',
+      palette: '#hex, #hex, #hex'
+    };
+
+    let activeClusterId = localStorage.getItem('monk_active_cluster') || '';
+
+    itemTypeEl.addEventListener('change', () => {
+      const ph = EXTRA_PLACEHOLDERS[itemTypeEl.value] || '';
+      itemExtraEl.placeholder = ph;
+      itemExtraEl.style.display = ph ? '' : 'none';
+    });
+    itemExtraEl.placeholder = EXTRA_PLACEHOLDERS[itemTypeEl.value];
+
+    togglePanelBtn.addEventListener('click', () => {
+      clusterPanel.classList.toggle('hidden');
+    });
+
+    clusterSelect.addEventListener('change', () => {
+      activeClusterId = clusterSelect.value;
+      localStorage.setItem('monk_active_cluster', activeClusterId);
+      loadClusterDetail();
+    });
+
+    newClusterBtn.addEventListener('click', async () => {
+      const title = prompt('Nombre del cluster:');
+      if (!title || !title.trim()) return;
+      const description = prompt('Descripción (opcional):') || '';
+
+      try {
+        const res = await fetch('/api/clusters', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: title.trim(), description })
+        });
+        const cluster = await res.json();
+        if (!res.ok) throw new Error(cluster.error || 'Error creando cluster');
+
+        await loadClusters();
+        clusterSelect.value = cluster.id;
+        activeClusterId = cluster.id;
+        localStorage.setItem('monk_active_cluster', activeClusterId);
+        loadClusterDetail();
+        clusterPanel.classList.remove('hidden');
+
+      } catch (err) {
+        errorEl.textContent = 'Algo falló: ' + err.message;
+        errorEl.style.display = 'block';
+      }
+    });
+
+    addItemForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!activeClusterId) return;
+
+      const type = itemTypeEl.value;
+      const title = itemTitleEl.value.trim();
+      const extra = itemExtraEl.value.trim();
+      const note = itemNoteEl.value.trim();
+      if (!title) return;
+
+      const item = { type, title };
+      if (note) item.note = note;
+      if (extra) {
+        if (type === 'typography') item.foundry = extra;
+        else if (type === 'palette') item.colors = extra.split(',').map(s => s.trim()).filter(Boolean);
+        else item.url = extra;
+      }
+
+      try {
+        const res = await fetch('/api/clusters?id=' + activeClusterId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ addItem: item })
+        });
+        const cluster = await res.json();
+        if (!res.ok) throw new Error(cluster.error || 'Error agregando item');
+
+        itemTitleEl.value = '';
+        itemExtraEl.value = '';
+        itemNoteEl.value = '';
+        renderCluster(cluster);
+        await loadClusters();
+
+      } catch (err) {
+        errorEl.textContent = 'Algo falló: ' + err.message;
+        errorEl.style.display = 'block';
+      }
+    });
+
+    async function loadClusters() {
+      try {
+        const res = await fetch('/api/clusters');
+        const clusters = await res.json();
+        if (!res.ok) throw new Error(clusters.error || 'Error cargando clusters');
+
+        clusterSelect.innerHTML = '<option value="">— sin cluster activo —</option>';
+        for (const c of clusters) {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.title + (c.itemCount ? ` (${c.itemCount})` : '');
+          if (c.id === activeClusterId) opt.selected = true;
+          clusterSelect.appendChild(opt);
+        }
+
+        if (activeClusterId && !clusters.find(c => c.id === activeClusterId)) {
+          activeClusterId = '';
+          localStorage.removeItem('monk_active_cluster');
+        }
+
+      } catch (err) {
+        // sin Redis configurado todavía, seguimos sin clusters
+      }
+    }
+
+    async function loadClusterDetail() {
+      if (!activeClusterId) {
+        clusterMeta.innerHTML = '';
+        itemsGrid.innerHTML = '';
+        return;
+      }
+      try {
+        const res = await fetch('/api/clusters?id=' + activeClusterId);
+        const cluster = await res.json();
+        if (!res.ok) throw new Error(cluster.error || 'Error cargando cluster');
+        renderCluster(cluster);
+      } catch (err) {
+        errorEl.textContent = 'Algo falló: ' + err.message;
+        errorEl.style.display = 'block';
+      }
+    }
+
+    function renderCluster(cluster) {
+      clusterMeta.innerHTML = '';
+
+      const title = document.createElement('div');
+      title.className = 'meta-title';
+      title.textContent = cluster.title;
+      clusterMeta.appendChild(title);
+
+      if (cluster.description) {
+        const desc = document.createElement('div');
+        desc.className = 'meta-desc';
+        desc.textContent = cluster.description;
+        clusterMeta.appendChild(desc);
+      }
+
+      if (cluster.tags?.length) {
+        const tags = document.createElement('div');
+        tags.className = 'meta-tags';
+        tags.textContent = cluster.tags.join(' · ');
+        clusterMeta.appendChild(tags);
+      }
+
+      itemsGrid.innerHTML = '';
+      if (!cluster.items?.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-note';
+        empty.textContent = 'Este cluster está vacío. Agregá el primer material abajo.';
+        itemsGrid.appendChild(empty);
+        return;
+      }
+
+      for (const item of cluster.items) {
+        itemsGrid.appendChild(renderItemCard(item, cluster.id));
+      }
+    }
+
+    function renderItemCard(item, clusterId) {
+      const card = document.createElement('div');
+      card.className = 'item-card';
+
+      const remove = document.createElement('span');
+      remove.className = 'item-remove';
+      remove.textContent = '×';
+      remove.title = 'quitar';
+      remove.addEventListener('click', async () => {
+        try {
+          const res = await fetch('/api/clusters?id=' + clusterId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ removeItem: item.id })
+          });
+          const cluster = await res.json();
+          if (!res.ok) throw new Error(cluster.error || 'Error quitando item');
+          renderCluster(cluster);
+          await loadClusters();
+        } catch (err) {
+          errorEl.textContent = 'Algo falló: ' + err.message;
+          errorEl.style.display = 'block';
+        }
+      });
+      card.appendChild(remove);
+
+      const type = document.createElement('div');
+      type.className = 'item-type';
+      type.textContent = item.type;
+      card.appendChild(type);
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'item-title';
+      titleEl.textContent = item.title;
+      card.appendChild(titleEl);
+
+      if (item.type === 'typography' && item.foundry) {
+        const sub = document.createElement('div');
+        sub.className = 'item-sub';
+        sub.textContent = item.foundry;
+        card.appendChild(sub);
+      }
+
+      if ((item.type === 'image' || item.type === 'link' || item.type === 'audio') && item.url) {
+        const sub = document.createElement('div');
+        sub.className = 'item-sub';
+        sub.textContent = item.url;
+        card.appendChild(sub);
+      }
+
+      if (item.note) {
+        const sub = document.createElement('div');
+        sub.className = 'item-sub';
+        sub.textContent = item.note;
+        card.appendChild(sub);
+      }
+
+      if (item.type === 'palette' && item.colors?.length) {
+        const swatches = document.createElement('div');
+        swatches.className = 'item-swatches';
+        for (const color of item.colors) {
+          const sw = document.createElement('div');
+          sw.className = 'item-swatch';
+          sw.style.background = color;
+          sw.title = color;
+          swatches.appendChild(sw);
+        }
+        card.appendChild(swatches);
+      }
+
+      return card;
+    }
+
+    loadClusters().then(loadClusterDetail);
+
 
     let history = [];
     let busy = false;
@@ -381,7 +826,7 @@
         const res = await fetch('/api/monk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: history })
+          body: JSON.stringify({ messages: history, clusterId: activeClusterId || null })
         });
 
         const data = await res.json();
