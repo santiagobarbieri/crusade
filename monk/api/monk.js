@@ -36,6 +36,16 @@ Si no entendes bien que busca, haces una sola pregunta, no varias.
 
 Recordá siempre: sos un ayudante. El creativo dirige. Vos encontras, sugeris, conectas.`;
 
+  let profileContext = '';
+  try {
+    const p = await redisCmd('GET', 'profile:default');
+    if (p.result) {
+      profileContext = '\n\nLo que sabes de la persona con la que hablas, de conversaciones anteriores:\n' + p.result;
+    }
+  } catch (e) {
+    // sin perfil todavia, seguimos sin esto
+  }
+
   let clusterContext = '';
   if (clusterId) {
     try {
@@ -49,7 +59,7 @@ Recordá siempre: sos un ayudante. El creativo dirige. Vos encontras, sugeris, c
     }
   }
 
-  const FULL_SYSTEM = SYSTEM + clusterContext;
+  const FULL_SYSTEM = SYSTEM + profileContext + clusterContext;
 
   try {
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {

@@ -505,6 +505,14 @@
 
     let activeClusterId = localStorage.getItem('monk_active_cluster') || '';
 
+    // si CRUSADE abre a MONK con ?cluster=id, ese tiene prioridad
+    const urlParams = new URLSearchParams(window.location.search);
+    const clusterFromUrl = urlParams.get('cluster');
+    if (clusterFromUrl) {
+      activeClusterId = clusterFromUrl;
+      localStorage.setItem('monk_active_cluster', activeClusterId);
+    }
+
     itemTypeEl.addEventListener('change', () => {
       const ph = EXTRA_PLACEHOLDERS[itemTypeEl.value] || '';
       itemExtraEl.placeholder = ph;
@@ -744,6 +752,16 @@
 
     let history = [];
     let busy = false;
+    let exchangeCount = 0;
+
+    function updateProfile() {
+      const recent = history.slice(-8);
+      fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: recent })
+      }).catch(() => {});
+    }
 
     // hints
     document.getElementById('hints').addEventListener('click', e => {
@@ -839,6 +857,9 @@
         block._body.textContent = full;
 
         history.push({ role: 'assistant', content: full });
+
+        exchangeCount++;
+        if (exchangeCount % 3 === 0) updateProfile();
 
       } catch (err) {
         if (block._cur) block._cur.remove();
